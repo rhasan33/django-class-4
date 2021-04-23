@@ -12,6 +12,7 @@ from rest_framework.exceptions import ValidationError
 
 import jwt
 
+from user.helpers import creat_tokens
 from user.models import User
 from user.serializers import UserSerializer
 from user.permissions import IsSuperUser
@@ -53,20 +54,10 @@ def login(request: Request) -> Response:
         user = User.objects.get(username__exact=username)
         if not user.check_password(raw_password=password):
             raise ValidationError(detail='invalid password', code=status.HTTP_400_BAD_REQUEST)
-        token_data = {
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'username': user.username,
-            'is_active': user.is_active,
-            'is_superuser': user.is_superuser,
-            'is_staff': user.is_staff,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1),
-            'token_type': 'access'
-        }
-        raw_token = jwt.encode(payload=token_data, key=settings.SECRET_KEY, algorithm='HS256')
-        token = raw_token.decode('utf-8')
+        access_token, refresh_token = creat_tokens(user=user)
         data = {
-            'token': token,
+            'access_token': access_token,
+            'refresh_token': refresh_token,
         }
         return Response(data=data, status=status.HTTP_201_CREATED)
     except User.DoesNotExist:
@@ -77,4 +68,17 @@ class GetUsers(ListAPIView):
     serializer_class = UserSerializer
     permission_classes = (permissions.AllowAny,)
     queryset = User.objects.filter()
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def refreshed_token(request: Request) -> Response:
+    if not request.user.is_active:
+        raise ValidationError(detail='user is not active', code=status.HTTP_401_UNAUTHORIZED)
+    access_token, refresh_token = creat_tokens(user=request.user)
+    data = {
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+    }
+    return Response(data=data, status=status.HTTP_201_CREATED)
 

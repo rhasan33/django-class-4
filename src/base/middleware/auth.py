@@ -21,23 +21,9 @@ class AuthMiddleware:
     @staticmethod
     def get_user(data: Dict) -> Union[Tuple[User, List[Group]], object]:
         try:
-            user, created = User.objects.get_or_create(username=data.get('username'))
-
-            if created:
-                user.is_superuser = data.get('is_superuser')
-                user.first_name = data.get('first_name')
-                user.last_name = data.get('last_name')
-                user.is_staff = data.get('is_staff')
-                user.is_active = data.get('is_active')
-                user.email = data.get('email')
-                user.date_joined = parser.isoparse(data.get('date_joined'))
-                if data.get('groups'):
-                    for group in data.get('groups'):
-                        group_obj, _ = Group.objects.get_or_create(name=group)
-                        group_obj.user_set.add(user)
-                user.save()
-            return user, user.groups
-        except Exception as err:
+            user = User.objects.get(username=data.get('username'))
+            return user
+        except User.DoesNotExist as err:
             logger.error(f'error creating or retrieving user. reason: {err}')
             return
 
@@ -53,12 +39,8 @@ class AuthMiddleware:
                     }, status=400)
             try:
                 payload: Dict = jwt.decode(jwt=token_obj[1], key=SECRET_KEY, algorithms='HS256', verify=True)
-                if payload['token_type'] != 'access':
-                    return JsonResponse(data={
-                        'message': 'no access token provided',
-                        'success': False
-                    }, status=400)
-                user_obj, groups = self.get_user(data=payload)
+                print(payload)
+                user_obj = self.get_user(data=payload)
                 if not user_obj:
                     return JsonResponse(data={
                         'message': 'cannot retrieve user information',
