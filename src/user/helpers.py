@@ -15,7 +15,7 @@ def generate_access_token(user: User) -> str:
         'is_active': user.is_active,
         'is_superuser': user.is_superuser,
         'is_staff': user.is_staff,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=20),
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=20),
         'token_type': 'access'
     }
     raw_token = jwt.encode(payload=token_data, key=settings.SECRET_KEY, algorithm='HS256')
