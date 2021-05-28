@@ -24,4 +24,5 @@ urlpatterns = [
     path('api/v1/users', include('user.urls', namespace='user-api')),
     path('api/v1/shops', include('shop.urls', namespace='shop-api')),
     path('api/v1/wallet', include('wallet.urls', namespace='wallet-api')),
+    path('api/v1/products', include('product.urls', namespace='product-api')),
 ]
